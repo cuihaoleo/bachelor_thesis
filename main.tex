@@ -1,26 +1,26 @@
 %!TEX encoding = UTF-8 Unicode
 %!TEX program = xelatex
 
-\documentclass[doctor]{ustcthesis}
+\documentclass[bachelor]{ustcthesis}
 % bachelor|master|doctor
 \usepackage{ustcextra}
 \graphicspath{{figures/}}
 \bibliographystyle{ustcauthoryear}
 % \bibliographystyle{ustcnumerical}
 
-\title{中国科学技术大学\\毕业论文模板示例文档}
-\author{赵钱孙}
-\major{XXXX专业}
-\advisor{钱学森\ 教授}
-\submitdate{二〇九九年十三月}
+\title{InSAR 成像算法的 CPU 并行优化}
+\author{崔灏}
+\major{固体地球物理专业}
+\advisor{查显杰\ 副教授}
+\submitdate{二〇一七年五月}
 %\secrettext{机密\quad 小于等于20年}   % 内部|秘密|机密，注释本行则不保密
-\depart{一二三系}
+\depart{地球和空间科学学院}
 
-\entitle{An Example of USTC Thesis Template for Bachelor, Master and Doctor}
-\enauthor{Qiansun Zhao}
-\enmajor{Whatever}
-\enadvisor{Prof. Xueshen Qian}
-\ensubmitdate{June, 2099}
+\entitle{CPU-based parallel optimization of InSAR imaging algorithm}
+\enauthor{CUI Hao}
+\enmajor{TODO}
+\enadvisor{TODO}
+\ensubmitdate{May, 2017}
 %\ensecrettext{Confidential\quad Less than or equal to 20 years}  % Internal|Secret|Confidential
 
 \begin{document}
@@ -43,27 +43,20 @@
 \frontmatter
 \input{chapters/abstract}
 \tableofcontents
-\listoffigures
-\listoftables
-\listofalgorithms  % 算法索引，如不需要，可直接注释掉本行
+%\listoffigures
+%\listoftables
+%\listofalgorithms  % 算法索引，如不需要，可直接注释掉本行
 % \input{chapters/notation}
 
 \mainmatter
 \input{chapters/intro}
-\input{chapters/figure}
-\input{chapters/table}
-\input{chapters/math}
 \input{chapters/algorithm}
-\input{chapters/code}
-\input{chapters/crossref}
-\input{chapters/citation}
+\input{chapters/experiments}
+\input{chapters/future}
 \bibliography{bib/tex}
 
 \appendix
-\chapter{论文规范}
-
 \backmatter
 \input{chapters/acknowledgements}
-\input{chapters/publications}
 
 \end{document}
