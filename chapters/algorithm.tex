@@ -2,7 +2,56 @@
 
 \section{InSAR 成像算法简介}
 
-讨论并行 InSAR 成像算法之前
+讨论并行 InSAR 成像算法之前，先对基本的算法原理做一个简单回顾。
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.4\textwidth]{insar_simple}
+\caption{InSAR 高程测量基本原理} \label{fig:insar_simple}
+\end{figure}
+
+图 \ref{fig:insar_simple} 展示了利用两个 SAR 雷达观测同一地面单位进行 InSAR 测高的基本原理。InSAR 测量地表形变的原理与之类似。$A_1$ 和 $A_2$ 表示主天线和副天线位置，两天线空间位移矢量为 $\vec{B}$，称为 InSAR 基线，角度 $\alpha$ 为基线与水平面夹角。$C$ 为地面目标点，相对于两天线的位移矢量分别为 $\vec{r_1}$ 和 $\vec{r_2}$，称为斜距。角度 $\theta$ 为主天线观察方向与竖直方向的夹角，称为下视角。
+
+斜距矢量 $ \vec{r_1} $ 和 $ \vec{r_2} $ 可以根据天线方向和微波信号双程旅行时得到；雷达位置或 SAR 卫星轨道，即基线 $\vec{B}$ 和天线高度 $H$，也可以认为是已知的。
+
+由简单的几何关系可知，目标点高度可以表示为：
+
+\begin{equation}
+    h = H - r_1 \cos\theta
+\end{equation}
+
+为了得到 $\theta$，分别从主天线和副天线取得 SAR SLC 图像。目标点 $C$ 在两幅图像上的复像素值 $P_1$ 和 $P_2$ 可以表示为：
+
+\begin{equation}
+\begin{split}
+    P_1(\vec{r_1}) = A_1(\vec{r_1}) \exp(i \frac{4\pi}{\lambda} r_1) \\
+    P_2(\vec{r_2}) = A_2(\vec{r_2}) \exp(i \frac{4\pi}{\lambda} r_2) \\
+\end{split}
+\end{equation}
+
+将两幅 SLC 图像共轭相乘，即得到一幅干涉图像：
+
+\begin{equation}
+    P_{\textrm{int}} = P_1^* P_2 =  A_1 A_2 \exp(i \frac{4\pi}{\lambda}(r_2 - r_1))
+\end{equation}
+
+干涉图相位项中的 $ r_2 - r_1 $ 可以通过余弦定理展开：
+\begin{equation}
+\begin{split}
+    r_2 - r_1 &= r_1 (\frac{r_2}{r_1} - 1) \\
+              &= r_1 \sqrt{1- \frac{\vec{r_1} \cdot \vec{B}}{r_1} + (\frac{B}{r_1})^2}
+\end{split}
+\end{equation}
+
+基线长度 $B$ 一般远小于斜距 $r_1$、$r_2$，上式可以简化为：
+\begin{equation}
+    r_2 - r_1 = - \vec{r_1} \cdot \vec{B} = - r_1 B \cos(\frac{\pi}{2} - \theta + \alpha)
+\end{equation}
+
+故 $\theta$ 可以通过干涉图相位求出，进而得到目标点高程 $h$。然而，实际上回波相位（SAR 图像相位）是折叠到一个 $2\pi$ 周期内的，因此干涉图相位的值域也折叠在一个 $2\pi$ 周期中，这称为相位缠绕（phase wrap）。连续的相位值仍可以通过一些相位解缠算法估计出来。
+
+实际使用 InSAR 测高时，还必须考虑地球曲率的影响。测量地表形变或位移时，原始地形引起的相位差也要通过数字高程模型去除。在过去，雷达轨道信息的精度也会影响 InSAR 成像精度；近些年，得益于卫星定位技术的发展，雷达轨道已经可以精确获知。此外，电离层噪声、对流层噪声等因素也会影响 InSAR 成像的精度。
+
 
 \section{并行图像配准算法设计}
 
