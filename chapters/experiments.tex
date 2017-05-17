@@ -1,5 +1,29 @@
 \chapter{性能测试与分析}
 
-\section{GMTSAR 性能对比}
+\section{性能测试数据}
+ 
+\begin{figure}[htbp]
+\centering
+\subfloat[实际轨迹]{
+    \label{fig:地磁移动轨迹a}
+    \begin{minipage}[t]{0.49\textwidth}
+        \centering
+        \resizebox {\textwidth} {!} {
+            \input{figures/perf-core-time.tex}
+        }
+    \end{minipage}
+}
+\subfloat[关闭大西洋后的轨迹]{
+    \label{fig:地磁移动轨迹b}
+    \begin{minipage}[t]{0.49\textwidth}
+        \centering
+        \resizebox {\textwidth} {!} {
+            \input{figures/perf-core-cpuusage.tex}
+        }
+    \end{minipage}
+}
+\caption{InSAR 高程测量基本原理} \label{fig:exp_cores}
+\end{figure}
+
 
 \section{InSAR 数据处理实例}

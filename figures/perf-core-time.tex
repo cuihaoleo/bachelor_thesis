@@ -1,0 +1,29 @@
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={计算线程数},
+    ylabel={计算时间/s},
+    xmin=0, xmax=12.2,
+    ymin=0, ymax=12,
+    xtick={0, 2, 4, 6, 8, 10, 12},
+%    ytick={ },
+    legend pos=north east,
+    ymajorgrids=true,
+    grid style=dashed,
+]
+\addplot[
+    color=blue,
+    mark=square,
+    ]
+    coordinates {
+        (0, 11.200907922)
+        (1, 10.521500231)
+        (2, 5.431319614)
+        (3, 3.757715043)
+        (4, 2.918596810)
+        (6, 2.146015373)
+        (8, 2.052885075)
+        (12, 2.181156634)
+    };
+    \legend{xcorr2} 
+\end{axis}
+\end{tikzpicture}

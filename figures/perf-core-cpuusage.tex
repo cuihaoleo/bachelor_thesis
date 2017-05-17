@@ -1,0 +1,29 @@
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={计算线程数},
+    ylabel={占用 CPU 核心数},
+    xmin=0, xmax=12.2,
+    ymin=0, ymax=10,
+    xtick={0, 2, 4, 6, 8, 10, 12},
+%    ytick={ },
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+]
+\addplot[
+    color=red,
+    mark=square,
+    ]
+    coordinates {
+        (12,8.667)
+        (8 ,7.296)
+        (6 ,6.414)
+        (4 ,4.438)
+        (3 ,3.376)
+        (2 ,2.304)
+        (1 ,1.168)
+        (0 ,1.000)
+    };
+    \legend{xcorr2}
+\end{axis}
+\end{tikzpicture}
