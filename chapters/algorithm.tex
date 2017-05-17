@@ -74,7 +74,7 @@
 
 本节将以 GMTSAR 中图像拼接预处理和相位解缠两个程序模块为例子，介绍 CPU 并行的 InSAR 成像程序的算法设计和具体实现。
 
-\subsection{并行图像配准算法设计}
+\subsection{并行图像配准算法}
 
 GMTSAR 中主要由 xcorr 和 fitoffset.csh 程序实现图像配准。GMTSAR 将主 SAR SLC 图像像素到副 SLC 图像之间的映射近似为一个二维仿射变换，可以通过6个变换参数定义。主 SLC 图像的像素 $(x_i, y_i)$ 因为轨道偏移被映射到副 SLC 图像上的 $(x_i', y_i')$，两个坐标通过仿射变换矩阵相联系：
 
@@ -131,12 +131,63 @@ GMTSAR 中主要由 xcorr 和 fitoffset.csh 程序实现图像配准。GMTSAR �
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.6\textwidth]{parallel}
-\caption{xcorr2 并行图像配准程序多线程架构（副线程计算流程同图\ref{fig:xcorr2}）} \label{fig:parallel}
+\caption{xcorr2 并行图像配准程序多线程架构（计算线程计算流程同图\ref{fig:xcorr2}）} \label{fig:parallel}
 \end{figure}
 
 综合上述因素，xcorr2 使用了如图\ref{fig:parallel}所示的主-副多线程并行架构。这一设计的核心是用独立的\textbf{主线程}进行数据预读取，而线程池中的\textbf{计算线程}则只执行计算操作。因为只有一个线程执行文件读取，可以充分发挥机械硬盘顺序读写的优势，不会因多线程文件读取相互竞争影响性能。内存开销方面，主线程每次只提前多读取一组待处理的采样窗口数据，并行内存开销相当于 单线程内存开销 $\times$ 线程数 $\times 2$。理想情况下，主线程文件读取操作与计算线程计算任务完全并行、并且文件读取不慢于单个采样窗口配准计算所需的时间（按照前面的分析应当是成立的），则并行算法的加速比应当正比于计算线程数量。
 
+\subsection{基于并行规约的图像拼接算法}
 
-\subsection{并行图像拼接算法设计}
+本课题还通过规约（reduce）算法对图像拼接进行了并行优化。通常采用两种方法拼接 InSAR 图像，得到较大范围的高程模型或地表位移信息：
 
-\subsection{其他程序模块的并行优化}
+\begin{itemize}
+    \item \textbf{SAR 图像帧拼接}：包括 ERS、InSAR 在内的 SAR 卫星，用轨道号（track）和图像帧号（frame）标记不同时间和观测位置的 SAR 数据。同一轨道号的对应的不同图像帧对应的观测区域是在方位向连续的，分成若干帧只是为了便于存储和分发。大地测量应用中，成像范围可能包含多个图像帧，因此要将帧号连续的 SAR 数据文件或者 SLC 图像依次合并，以得到较大的成像区域。GMTSAR 中的 ALOSMerge 程序模块用于进行 ALOS 卫星数据的拼接。
+    \item \textbf{InSAR 干涉图拼接}：除了合并 SAR 数据，也可以分区域进行 InSAR 成像再进行图像拼接。因为跨轨道号的 SAR 数据没有成像区域上的连续性，要得到距离向跨多个图像帧的干涉图像，只能在 InSAR 成像后进行拼接。虽然 GMTSAR 没有直接提供拼接程序，但会以 NetCDF 4 文件格式导出相位解缠后的 InSAR 干涉图，该格式可以很方便地使用 Python、Matlab 等编程语言读取和合并。
+\end{itemize}
+
+除了 SAR/InSAR 数据处理中的应用，文件拼接也是科研数据处理中常见的操作。数据文件往往受存储器或通信方式的限制，必须分块存储，而在数据处理时要重新合并成连续的数据文件。这类拼接操作的原始数据是串行生成的，其顺序反映了时间或者空间位置上的顺序，因此合并时必须保持特定的拼接的顺序。
+
+即，文件拼接操作 $\oplus$ 满足结合性，但不满足交换性：
+
+\begin{equation}
+\begin{split}
+    (F_i \oplus F_j) \oplus F_k = F_i \oplus (F_j \oplus F_k) \qquad &\forall F_i, F_j, F_k \in \textrm{\{data files\}} \\
+    F_i \oplus F_j \neq F_j \oplus F_i \qquad &\exists F_i, F_j \in \textrm{\{data files\}}
+\end{split}
+\end{equation}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{reduce-crop}
+\caption{基于并行规约的图像拼接算法流程示意} \label{fig:reduce}
+\end{figure}
+
+这类合并算法，仍可以利用结合性改造为并行算法，这种技术称为并行规约。图 \ref{fig:reduce} 展示了并行规约技术的工作流程。规约技术将串行的拼接操作分解为连续的文件序列上的拼接操作，完成一轮拼接后，再通过下一轮迭代将上一轮生成的结果分组拼接，不断迭代直至完成整个文件序列的拼接。并行规约图像拼接算法可以非常简洁地通过程序实现。程序伪代码如图 \ref{fig:reduce-algo} 所示。
+
+\begin{figure}[htbp]
+\begin{lstlisting}[language=C]
+// threadId: 线程编号
+// 全部线程结束后，文件 0 为拼接后的结果
+void mergingThread(int threadId) {
+    int level = 1;
+
+    while (threadId & level != 0)
+        int another = threadId + (1 << level);
+
+        waitThread(another);  // 等待编号为 another 的线程
+
+        // 将编号为 another 的文件合并进编号为 current 的文件
+        mergeTwoFile(current, another);
+        
+        level = level * 2 + 1;
+    }
+
+    terminateThread();  // 停止当前线程
+}
+\end{lstlisting}
+\caption{基于并行规约的图像拼接算法伪代码示意}
+\label{fig:reduce-algo}
+\end{figure}
+
+可以看到，并行规约的图像拼接算法中各工作线程的工作量是不平均的，算法最后会收敛为单线程执行。当要拼接的文件数量较多时可以较好发挥多核心 CPU 的并行计算优势。理论上，如果忽略文件大小对拼接效率的影响，并且不考虑有效并行线程数的限制，规约技术可以将操作时间从大约 $N \times t$（t 为合并一对文件耗费的时间）缩短至 $\log_2(N) \times t$。
+
