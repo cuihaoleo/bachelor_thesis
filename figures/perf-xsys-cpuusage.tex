@@ -1,11 +1,13 @@
 \begin{tikzpicture}
-\begin{axis}[
+\begin{semilogxaxis}[
     xlabel={采样窗口数量},
     ylabel={CPU 核心占用},
-    xmin=0, xmax=5000,
-    ymin=0, ymax=6,
-    ytick={ 0, 1, 2, 3, 4, 5, 6 },
-    legend style={at={(0.97,0.7)},anchor=east,font=\small},
+    xmin=16, xmax=256,
+    ymin=0, ymax=7.5,
+    xtick={ 16, 32, 64, 128, 256 },
+    ytick={ 0, 1, 2, 3, 4, 5, 6, 7 },
+    log ticks with fixed point,
+    legend style={at={(0.05,0.8)},anchor=west,font=\small},
     ymajorgrids=true,
     grid style=dashed,
 ]
@@ -16,12 +18,11 @@
     style=densely dashed,
     ]
     coordinates {
-        (4608, 2.589)
-        (3200, 2.520)
-        (2048, 2.439)
-        (1152, 2.074)
-        (512, 2.108)
-        (128, 2.118)
+        (256, 2.344)
+        (128, 2.501)
+        (64, 2.281)
+        (32, 1.455)
+        (16, 1.166)
     };
     \addlegendentry{GMTSAR xcorr}
 
@@ -31,12 +32,11 @@
     style=densely dotted,
     ]
     coordinates {
-        (4608, 1.000)
-        (3200, 1.000)
-        (2048, 1.000)
-        (1152, 1.000)
-        (512, 1.000)
-        (128, 0.999)
+        (256, 1.000)
+        (128, 1.000)
+        (64, 1.000)
+        (32, 0.999)
+        (16, 0.998)
     };
     \addlegendentry{xcorr2（单线程）}
 
@@ -46,14 +46,13 @@
     style=solid,
     ]
     coordinates {
-        (4608, 5.899)
-        (3200, 5.674)
-        (2048, 5.283)
-        (1152, 4.705)
-        (512, 3.906)
-        (128, 2.621)
+        (256, 7.134)
+        (128, 5.745)
+        (64, 4.093)
+        (32, 2.929)
+        (16, 2.492)
     };
     \addlegendentry{xcorr2（8线程）}
 
-\end{axis}
+\end{semilogxaxis}
 \end{tikzpicture}
