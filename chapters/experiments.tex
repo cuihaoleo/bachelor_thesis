@@ -19,7 +19,38 @@
 \caption{软件测试环境} \label{tab:env}
 \end{table}
 
-并行算法的性能并非总是随着线程数的增加而提升。当计算线程增加时，线程间通信的成本会增加，其他不可并行资源访问（如磁盘读写）也可能达到性能瓶颈。图 \ref{fig:exp_cores} 显示了默认计算参数下 xcorr2 性能随计算线程数的变化趋势。当计算线程从无增加至6个时，图 \ref{fig:exp_cores_a} 显示的计算时间缩短非常显著。但当计算线程数进一步增加时，运行时间并没有缩短。图 \ref{fig:exp_cores_b} 中的 CPU 核心使用率也反应了这种趋势，当计算线程数多于6个时，核心使用率少于计算线程数，说明程序已经无法充分利用所有的 CPU 核心。后面的实验中将选取8个计算线程，以反映该测试平台下 xcorr2 程序的最优性能。
+\subsection{图像拼接算法测试和评估}
+
+对于并行图像拼接算法，因为数据来源有限，实验中仅仅使用了6个同一轨道号的连续的 SAR 图像帧进行测试。图 \ref{fig:exp_merge} 展示了并行线程数对拼接程序性能的影响。可以看到，并行归约算法将拼接时间缩短了一半以上。比较遗憾的是，由于要拼接的图像帧数量较少，归约算法的线程数很快就收敛了，并行算法性能大概在2～3个线程时就达到了饱和。
+
+\begin{figure}[htbp]
+\centering
+\subfloat[程序计算时间]{
+    \label{fig:exp_merge_a}
+    \begin{minipage}[t]{0.49\textwidth}
+        \centering
+        \resizebox {\textwidth} {!} {
+            \input{figures/perf-merge-time.tex}
+        }
+    \end{minipage}
+}
+\subfloat[CPU 核心利用率]{
+    \label{fig:exp_merge_b}
+    \begin{minipage}[t]{0.49\textwidth}
+        \centering
+        \resizebox {\textwidth} {!} {
+            \input{figures/perf-merge-cpuusage.tex}
+        }
+    \end{minipage}
+}
+\caption{线程数对 SAR 图像帧并行拼接算法性能的影响（测试数据共6帧）} \label{fig:exp_merge}
+\end{figure}
+ 
+该例子说明，并行算法的性能并非总是随着线程数的增加而提升。计算线程数量超过一定值后，多余的线程将不会改善程序性能，必须改进算法或者提高数据量以增加可利用的线程数。此外，线程数量增加时，线程间通信的成本会增加，其他不可并行资源访问（如磁盘读写）也可能达到性能瓶颈。
+
+\subsection{图像配准算法测试和评估}
+
+图 \ref{fig:exp_cores} 显示了默认计算参数下 xcorr2 性能随计算线程数的变化趋势。当计算线程从无增加至6个时，图 \ref{fig:exp_cores_a} 显示的计算时间缩短非常显著。但当计算线程数进一步增加时，运行时间并没有缩短。图 \ref{fig:exp_cores_b} 中的 CPU 核心使用率也反应了这种趋势，当计算线程数多于6个时，核心使用率少于计算线程数，说明程序已经无法充分利用所有的 CPU 核心。后面的实验中将选取8个计算线程，以反映该测试平台下 xcorr2 程序的最优性能。
 
 \begin{figure}[htbp]
 \centering
@@ -42,8 +73,9 @@
     \end{minipage}
 }
 
-\caption{使用不同数量计算线程对 xcorr2 配准性能的影响} \label{fig:exp_cores}
+\caption{使用不同数量计算线程对 xcorr2 配准性能的影响}
 \note{xcorr2 运行时会启动一个主线程和若干计算线程，主线程不参与计算。计算线程数为0代表不启动计算线程，直接使用主线程串行计算。}
+\label{fig:exp_cores}
 \end{figure}
  
 图 \ref{fig:exp_ri}、图 \ref{fig:exp_nxy} 和图 \ref{fig:exp_xsys} 展示了不同配准参数对 GMTSAR xcorr 程序、串行 xcorr2 程序（即不启动计算线程，直接使用主线程计算）和多线程并行 xcorr2 程序（使用8个计算线程）计算性能的影响。注意 GMTSAR xcorr 虽然主要算法是串行计算的，但由于其调用的 GMT 函数库会启动额外的线程进行一些非计算操作，因此实测的 CPU 核心占用率会高于1。
@@ -54,6 +86,8 @@
     \item \textbf{采样窗口数量 $n_x \times n_y$}（图\ref{fig:exp_nxy}）决定了配准算法处理的数据总量。理论上计算时间与采样窗口数量成正比，测试数据也印证了这一点。
     \item \textbf{采样窗口宽度 $w$}（图\ref{fig:exp_xsys}）的平方即为采样窗口的大小，主要影响 2D FFT 算法规模。2D FFT 复杂度应当正比于 $w^2 \log(w)$，测试数据基本上反映了这一趋势（由于 $\log(w)$ 变化较小，计算时间基本与 $w^2$ 成正比）。
 \end{itemize}
+
+将 GMTSAR xcorr 与 xcorr2 配准性能横向比较，xcorr2 的性能提升十分显著，部分结果性能提升甚至达到30倍之多。对于单纯的算法并行改写，这是不可能实现的。但由于 xcorr2 并非简单的并行改写而是完整的重写，并包含其他方面的程序优化（如使用实序列 FFT 算法代替复序列 FFT 算法），这样的结果是可以理解的。现代编译器能为良好的代码实现提供合适的优化，从 CPU 指令翻译的层面改善程序性能。
 
 \begin{figure}[htbp]
 \centering
@@ -81,7 +115,7 @@
 \begin{figure}[htbp]
 \centering
 \subfloat[程序计算时间]{
-    \label{fig:exp_ri_a}
+    \label{fig:exp_nxy_a}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
@@ -90,7 +124,7 @@
     \end{minipage}
 }
 \subfloat[CPU 核心利用率]{
-    \label{fig:exp_ri_b}
+    \label{fig:exp_nxy_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
@@ -98,13 +132,13 @@
         }
     \end{minipage}
 }
-\caption{采样窗口数量对配准速度的影响} \label{fig:exp_ri}
+\caption{采样窗口数量对配准速度的影响} \label{fig:exp_nxy}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \subfloat[程序计算时间]{
-    \label{fig:exp_nxy_a}
+    \label{fig:exp_xsys_a}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
@@ -113,7 +147,7 @@
     \end{minipage}
 }
 \subfloat[CPU 核心利用率]{
-    \label{fig:exp_nxy_b}
+    \label{fig:exp_xsys_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
@@ -121,11 +155,9 @@
         }
     \end{minipage}
 }
-\caption{采样窗口宽度对配准速度的影响} \label{fig:exp_ri}
+\caption{采样窗口宽度对配准速度的影响} \label{fig:exp_xsys}
 \end{figure}
 
-
-将 GMTSAR xcorr 与 xcorr2 配准性能横向比较，xcorr2 的性能提升十分显著，部分结果性能提升甚至达到30倍之多。对于单纯的算法并行改写，这是不可能实现的。但由于 xcorr2 并非简单的并行改写而是完整的重写，并包含其他方面的程序优化（如使用实序列 FFT 算法代替复序列 FFT 算法），这样的结果是可以理解的。现代编译器能为良好的代码实现提供合适的优化，从 CPU 指令翻译的层面改善程序性能。
 
 为了说明多线程并行的影响，可以将 xcorr2 串行性能与多线程并行性能做一个比对。串行程序严格保持了单核心 CPU 占用，说明程序本身已经能够充分发挥 CPU 单核心性能。对于三个计算参数，并行程序的加速比和 CPU 核心占用率大体上都随着数据量增加而趋于饱和（理论上最高使用率为8～9核心）。
 
