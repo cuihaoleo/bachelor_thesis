@@ -1,10 +1,29 @@
-\chapter{性能测试与分析}
+\chapter{实验测试与分析}
 
-\section{性能测试数据}
- 
+\section{性能测试}
+
+本节使用的 InSAR 实验数据基于 GMTSAR 官方提供的2010年4月下加利福尼亚州 $7.2 M_w$ 地震前后的 ALOS 卫星数据。主、副 SAR 图像分别拍摄于2009年12月17日和2010年5月4日。SAR 图像大小为一个标准的 ALOS 图像帧，方位向和距离向长度各为 27648 像素和 11304 像素。软件测试环境如表 \ref{tab:env} 所示。
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+    \multirow{3}{*}{CPU}                        & 型号     & Intel Xeon E5-2650 v4                 \\ \cline{2-3} 
+                                                & 核心数   & $\times 12$                           \\ \cline{2-3} 
+                                                & 主频     & 2.20 GHz                              \\ \hline
+    \multicolumn{2}{|l|}{内存}                             & 32768 MiB                             \\ \hline
+    \multicolumn{2}{|l|}{操作系统}                         & Ubuntu 16.04.2 LTS, Linux 4.4.0 内核  \\ \hline
+    \multicolumn{1}{|c|}{\multirow{2}{*}{编译}} & 编译器   & gcc 5.4.0                             \\ \cline{2-3} 
+    \multicolumn{1}{|c|}{}                      & 编译参数 & \texttt{-O2 -march=native}            \\ \hline
+\end{tabular}
+\caption{软件测试环境} \label{tab:env}
+\end{table}
+
+并行算法的性能并非总是随着线程数的增加而提升。当计算线程增加时，线程间通信的成本会增加，其他不可并行资源访问（如磁盘读写）也可能达到性能瓶颈。图 \ref{fig:exp_cores} 显示了默认计算参数下 xcorr2 性能随计算线程数的变化趋势。当计算线程从无增加至6个时，图 \ref{fig:exp_cores_a} 显示的计算时间缩短非常显著。但当计算线程数进一步增加时，运行时间并没有缩短。图 \ref{fig:exp_cores_b} 中的 CPU 核心使用率也反应了这种趋势，当计算线程数多于6个时，核心使用率少于计算线程数，说明程序已经无法充分利用所有的 CPU 核心。后面的实验中将选取8个计算线程，以反映该测试平台下 xcorr2 程序的最优性能。
+
 \begin{figure}[htbp]
 \centering
-\subfloat[实际轨迹]{
+\subfloat[程序计算时间]{
     \label{fig:exp_cores_a}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -13,7 +32,7 @@
         }
     \end{minipage}
 }
-\subfloat[关闭大西洋后的轨迹]{
+\subfloat[CPU 核心利用率]{
     \label{fig:exp_cores_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -22,14 +41,23 @@
         }
     \end{minipage}
 }
-\caption{InSAR 高程测量基本原理} \label{fig:exp_cores}
+
+\caption{使用不同数量计算线程对 xcorr2 配准性能的影响} \label{fig:exp_cores}
+\note{xcorr2 运行时会启动一个主线程和若干计算线程，主线程不参与计算。计算线程数为0代表不启动计算线程，直接使用主线程串行计算。}
 \end{figure}
-
-
  
+图 \ref{fig:exp_ri}、图 \ref{fig:exp_nxy} 和图 \ref{fig:exp_xsys} 展示了不同配准参数对 GMTSAR xcorr 程序、串行 xcorr2 程序（即不启动计算线程，直接使用主线程计算）和多线程并行 xcorr2 程序（使用8个计算线程）计算性能的影响。注意 GMTSAR xcorr 虽然主要算法是串行计算的，但由于其调用的 GMT 函数库会启动额外的线程进行一些非计算操作，因此实测的 CPU 核心占用率会高于1。
+
+对于评测数据，简要分析如下：
+\begin{itemize}
+    \item \textbf{距离向插值因子 $r_i$}（图\ref{fig:exp_ri}）决定了距离向插值后采样窗口距离向像素数增加的倍数，主要是增加了一组 2D FFT 计算。GMTSAR xcorr 启用距离向插值后计算时间明显增加，但并不随着插值因子增大而进一步变化，这可能是由于 xcorr 中 2D FFT 是通过对每一行数据进行 1D FFT 实现的，每一轮 1D FFT 规模相对较小，计算时间主要受每一行的数组操作（复制、补零等）支配。而 xcorr2 直接使用 2D FFT 完成插值，运行时间受到 FFT 算法点数支配。
+    \item \textbf{采样窗口数量 $n_x \times n_y$}（图\ref{fig:exp_nxy}）决定了配准算法处理的数据总量。理论上计算时间与采样窗口数量成正比，测试数据也印证了这一点。
+    \item \textbf{采样窗口宽度 $w$}（图\ref{fig:exp_xsys}）的平方即为采样窗口的大小，主要影响 2D FFT 算法规模。2D FFT 复杂度应当正比于 $w^2 \log(w)$，测试数据基本上反映了这一趋势（由于 $\log(w)$ 变化较小，计算时间基本与 $w^2$ 成正比）。
+\end{itemize}
+
 \begin{figure}[htbp]
 \centering
-\subfloat[实际轨迹]{
+\subfloat[程序计算时间]{
     \label{fig:exp_ri_a}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -38,7 +66,7 @@
         }
     \end{minipage}
 }
-\subfloat[关闭大西洋后的轨迹]{
+\subfloat[CPU 核心利用率]{
     \label{fig:exp_ri_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -47,12 +75,12 @@
         }
     \end{minipage}
 }
-\caption{InSAR 高程测量基本原理} \label{fig:exp_ri}
+\caption{距离向插值因子对配准速度的影响} \label{fig:exp_ri}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\subfloat[实际轨迹]{
+\subfloat[程序计算时间]{
     \label{fig:exp_ri_a}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -61,7 +89,7 @@
         }
     \end{minipage}
 }
-\subfloat[关闭大西洋后的轨迹]{
+\subfloat[CPU 核心利用率]{
     \label{fig:exp_ri_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
@@ -70,22 +98,22 @@
         }
     \end{minipage}
 }
-\caption{InSAR 高程测量基本原理} \label{fig:exp_nxy}
+\caption{采样窗口数量对配准速度的影响} \label{fig:exp_ri}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\subfloat[实际轨迹]{
-    \label{fig:exp_ri_a}
-    \begin{minipage}[t]{2.49\textwidth}
+\subfloat[程序计算时间]{
+    \label{fig:exp_nxy_a}
+    \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
             \input{figures/perf-xsys-time.tex}
         }
     \end{minipage}
 }
-\subfloat[关闭大西洋后的轨迹]{
-    \label{fig:exp_ri_b}
+\subfloat[CPU 核心利用率]{
+    \label{fig:exp_nxy_b}
     \begin{minipage}[t]{0.49\textwidth}
         \centering
         \resizebox {\textwidth} {!} {
@@ -93,11 +121,42 @@
         }
     \end{minipage}
 }
-\caption{InSAR 高程测量基本原理} \label{fig:exp_nxy}
+\caption{采样窗口宽度对配准速度的影响} \label{fig:exp_ri}
+\end{figure}
+
+
+将 GMTSAR xcorr 与 xcorr2 配准性能横向比较，xcorr2 的性能提升十分显著，部分结果性能提升甚至达到30倍之多。对于单纯的算法并行改写，这是不可能实现的。但由于 xcorr2 并非简单的并行改写而是完整的重写，并包含其他方面的程序优化（如使用实序列 FFT 算法代替复序列 FFT 算法），这样的结果是可以理解的。现代编译器能为良好的代码实现提供合适的优化，从 CPU 指令翻译的层面改善程序性能。
+
+为了说明多线程并行的影响，可以将 xcorr2 串行性能与多线程并行性能做一个比对。串行程序严格保持了单核心 CPU 占用，说明程序本身已经能够充分发挥 CPU 单核心性能。对于三个计算参数，并行程序的加速比和 CPU 核心占用率大体上都随着数据量增加而趋于饱和（理论上最高使用率为8～9核心）。
+
+\section{计算结果比较}
+
+\begin{figure}[htbp]
+\centering
+\subfloat[GMTSAR xcorr]{
+    \label{fig:exp_xcorr_result}
+    \begin{minipage}[t]{0.30\textwidth}
+        \centering
+        \includegraphics[width=0.99\textwidth]{xcorr-result}
+    \end{minipage}
+}
+\subfloat[xcorr2]{
+    \label{fig:exp_xcorr2_result}
+    \begin{minipage}[t]{0.30\textwidth}
+        \centering
+        \includegraphics[width=0.99\textwidth]{xcorr2-result}
+    \end{minipage}
+}
+\subfloat[偏移矢量差值]{
+    \label{fig:exp_diff_result}
+    \begin{minipage}[t]{0.39\textwidth}
+        \centering
+        \includegraphics[width=0.99\textwidth]{diff-result}
+    \end{minipage}
+}
+\caption{GMTSAR xcorr 与 xcorr2 配准结果对比} \label{fig:exp_result}
+\note{\small 移除了从轨道数据估计的常数偏移，图中仅显示了偏移矢量长度，单位为像素。\\白色部分采样窗口最大互相关小于 GMTSAR aligh.csh 设定的最低值 20，因互相关性太差被筛除。}
 \end{figure}
 
 
 
-
-
-\section{InSAR 数据处理实例}
