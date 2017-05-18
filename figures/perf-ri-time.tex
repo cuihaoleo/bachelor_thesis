@@ -1,0 +1,61 @@
+\begin{tikzpicture}
+\begin{semilogyaxis}[
+    xlabel={距离插值因子},
+    ylabel={计算时间/s},
+    xmin=0, xmax=8,
+    ymin=1, ymax=1000,
+    xtick={0, 2, 4, 6, 8, 10, 12},
+    ytick={1, 2, 5, 10, 20, 50, 100, 200, 500 },
+    legend style={at={(0.97,0.7)},anchor=east,font=\small},
+    ymajorgrids=true,
+    grid style=dashed,
+    log ticks with fixed point,
+]
+
+\addplot[
+    color=blue,
+    mark=triangle*,
+    style=densely dashed,
+    ]
+    coordinates {
+        (1, 28.380734387)
+        (2, 355.080775134)
+        (3, 489.556831309)
+        (4, 436.324908652)
+        (6, 443.801787742)
+        (8, 340.426922416)
+    };
+    \addlegendentry{GMTSAR xcorr}
+
+\addplot[
+    color=red,
+    mark=diamond*,
+    style=densely dotted,
+    ]
+    coordinates {
+        (1, 4.153604461)
+        (2, 11.487401350)
+        (3, 14.155506304)
+        (4, 16.512624900)
+        (6, 22.055095041)
+        (8, 27.565902736)
+    };
+    \addlegendentry{xcorr2（单线程）}
+
+\addplot[
+    color=brown,
+    mark=square*,
+    style=solid,
+    ]
+    coordinates {
+        (1, 1.850200586)
+        (2, 2.137233559)
+        (3, 2.451369629)
+        (4, 3.073333874)
+        (6, 4.204218840)
+        (8, 4.960682295)
+    };
+    \addlegendentry{xcorr2（8线程）}
+
+\end{semilogyaxis}
+\end{tikzpicture}
