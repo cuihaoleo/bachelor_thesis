@@ -189,6 +189,15 @@
 \note{\small 移除了从轨道数据估计的常数偏移，图中仅显示了偏移矢量长度，单位为像素。\\白色部分采样窗口最大互相关小于 GMTSAR aligh.csh 设定的最低值 18，因互相关性太差被筛除。}
 \end{figure}
 
+相干性（coherence）是干涉图质量或信噪比的重要度量。对于（已经配准的）进行干涉成像的两幅 SAR SLC 图像 $P_1$ 和 $P_2$，在像素 $(x, y)$ 周围某个采样区域 $D(x, y)$ 上的相干性 $\gamma(x, y)$ 定义为：
+
+\begin{equation}
+    \gamma = \frac{\sum_{x', y'} P_1(x', y') \cdot P_2^*(x', y') \cdot \exp(-i)}{}
+\end{equation}
+
+
+在一块采样区域中，相干性 $\gamma$
+图 \ref{fig:coh-two} 展示的是配准后的主、副 SLC 图像（散射系数）的互相关
 
 \begin{figure}[htbp]
 \centering
