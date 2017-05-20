@@ -2,22 +2,19 @@
 
 星载或机载 SAR 雷达图像是地球物理研究中常用的大地测量数据源。SAR/InSAR 成像数据处理量大、算法复杂度较高，对计算设备性能有很高的要求。然而，随着 CPU 并行计算能力的提升，在消费级个人工作站上进行 SAR/InSAR 数据处理已经成为可能。
 
-本课题研究了以 GMTSAR 为代表的 InSAR 数据处理软件的性能瓶颈，对算法中时间复杂度较高的图像合成、图像配准模块进行了 CPU 并行优化。对真实 SAR 卫星数据的处理结果显示，对比传统串行算法，本文提出的并行算法在不降低结果精度的前提下大大提高了多核 CPU 的使用率、缩短了计算时间。
+本课题研究了以 GMTSAR 为代表的 InSAR 数据处理软件的性能瓶颈，对算法中时间复杂度较高的图像拼接、图像配准模块进行了 CPU 并行优化。对真实 SAR 数据的处理结果显示，对比传统串行算法，本文提出的并行算法在不降低结果精度的前提下大大提高了多核 CPU 的使用率、缩短了计算时间。
 
 本文设计的并行算法不依赖特殊硬件，在消费级个人工作站上即可较快地完成 InSAR 数据处理，为地球物理相关科研人员提供了便利。同时，本文的思路也可以为地球物理领域的其他科学计算任务并行优化提供参考。
     
 \keywords{合成孔径干涉雷达\zhspace{} 大地测量\zhspace{} 图像处理\zhspace{} 并行计算}
 \end{abstract}
 
-%\begin{enabstract}
-%This is a sample document of USTC thesis \LaTeX{} template for bachelor, master
-%and doctor. The template is created by zepinglee and seisman, which orignate from
-%the template created by ywg@USTC\@. The template meets the equirements of USTC
-%theiss writing standards.
-%
-%This document will show the usage of basic commands provided by \LaTeX{} and some
-%features provided by the template. For more information, please refer to the
-%template document ustcthesis.pdf.
-%
-%\enkeywords{University of Science and Technology of China (USTC), Thesis, Universal \LaTeX{} Template, Bachelor, Master, PhD}
-%\end{enabstract}
+\begin{enabstract}
+Spaceborne and airborne Synthetic Aperture Radar (SAR) imaging is a common data source of geodesy in geophysical research. SAR/InSAR imaging processes huge amount of data and is very compute-intensive, so it typically requires computers with high performance to do it. However, with the development of parallel computing hardware, it has become possible to carry out SAR/InSAR data processing on consumer-level personal workstations.
+
+In this paper, the performance bottleneck of InSAR data processing software (GMTSAR as a example) is studied. Compute-intensive modules such as image registration and image stitching are optimized by adopting parallel algorithms in this work. Compared with traditional serial algorithms, the parallel algorithms proposed in this paper greatly improve the performance of InSAR data processing without loss of precision.
+
+The parallel algorithms proposed in this paper does not rely on special hardwares and works well on consumer-level workstation, which benifits geophysical researchers. Besides, the idea of parallel optimization in this paper also provides a good reference for optimization of other algorithms of scientific computing.
+
+\enkeywords{InSAR, geodesy, image processing, parallel computing}
+\end{enabstract}
