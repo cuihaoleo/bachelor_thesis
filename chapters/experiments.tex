@@ -17,7 +17,7 @@
 \caption{软件测试环境} \label{tab:env}
 \end{table}
 
-\section{图像拼接算法测试和评估}
+\section{图像拼接算法测试}
 
 并行图像拼接算法的实验测试中，因为数据来源有限，仅仅使用了6个同一轨道号的连续的 SAR 图像帧进行测试。图 \ref{fig:exp_merge} 展示了并行线程数对拼接程序性能的影响。可以看到，并行归约算法将拼接时间缩短了一半以上。比较遗憾的是，由于要拼接的图像帧数量较少，归约算法的线程数很快就收敛了，并行算法性能大概在2～3个线程时就达到了饱和。
 
@@ -41,14 +41,15 @@
         }
     \end{minipage}
 }
-\caption{线程数对 SAR 图像帧并行拼接算法性能的影响（测试数据共6帧）} \label{fig:exp_merge}
+\caption{线程数对 SAR 图像帧并行拼接算法性能的影响} \label{fig:exp_merge}
+\note{\small 测试数据共6个 ALOS 图像帧}
 \end{figure}
  
 该例子说明，并行算法的性能并非总是随着线程数的增加而提升。计算线程数量超过一定值后，多余的线程将不会改善程序性能，必须改进算法或者提高数据量以增加可利用的线程数。此外，线程数量增加时，线程间通信的成本会增加，其他不可并行资源访问（如磁盘读写）也可能达到性能瓶颈。
 
 图像拼接算法完全是确定性的，不会受拼接顺序影响。经过验证。并行拼接与顺序拼接的结果完全一致。
 
-\section{图像配准算法测试和评估}
+\section{图像配准算法测试}
 
 图 \ref{fig:exp_cores} 展示了默认计算参数（见表 \ref{tab:xcorr-args}）下 xcorr2 性能随计算线程数的变化趋势。当计算线程从无增加至6个时，图 \ref{fig:exp_cores_a} 显示的计算时间缩短非常显著。但当计算线程数进一步增加时，运行时间并没有显著变化。图 \ref{fig:exp_cores_b} 中的 CPU 核心使用率也反应了这种趋势，当计算线程数多于6个时，核心使用率少于计算线程数，说明程序已经无法充分利用所有的 CPU 核心。后面的实验中将使用8个计算线程对 xcorr2 并行性能进行评估，
 
@@ -97,19 +98,19 @@
 \caption{GMTSAR xcorr / xcorr2 各项计算参数} \label{tab:xcorr-args}
 \end{table}
  
-接下来若干图表（图 \ref{fig:exp_nxy} 、图 \ref{fig:exp_xsys} 和图 \ref{fig:exp_ri}、）展示了不同配准参数对 GMTSAR xcorr 程序、串行 xcorr2 程序（即不启动计算线程，直接使用主线程计算）和多线程并行 xcorr2 程序计算性能的影响。注意 GMTSAR xcorr 虽然是串行算法，但由于其调用的 GMT 函数库会启动额外的线程进行其他非计算操作，因此实测的 CPU 核心占用率会略高于1。
+接下来若干图表（图 \ref{fig:exp_nxy} 、图 \ref{fig:exp_xsys} 和图 \ref{fig:exp_ri}）展示了不同配准参数对 GMTSAR xcorr 程序、串行 xcorr2 程序（即不启动计算线程，直接使用主线程计算）和多线程并行 xcorr2 程序计算性能的影响。需要注意，GMTSAR xcorr 虽然是串行算法，但由于其调用的 GMT 函数库会启动额外的线程进行其他非计算操作，因此实测的 CPU 核心占用率会略高于1。
 
 对于评测数据涉及的三项参数对计算时间的影响，简要分析如下：
 
 \begin{itemize}
     \item \textbf{采样窗口数量 $n_x \times n_y$}（图\ref{fig:exp_nxy}）决定了局部配准算法执行的次数。局部配准算法在所有采样位置上的计算流程是完全一致的，因此理论上计算时间与采样窗口数量成正比。测试数据也印证了这一点。
     \item \textbf{采样窗口宽度 $w_x$、$w_y$}（图\ref{fig:exp_xsys}）或采样窗口大小，实验中取 $w_x = w_y = w$。该参数决定了局部配准算法处理的矩阵规模。因为局部配准中的矩阵操作主要是 2D FFT 变换，故可以根据 FFT 理论估计计算时间正比于 $w^2 \log(w)$。测试数据基本上反映了这一趋势（由于 $\log(w)$ 变化较小，计算时间主要受 $w^2$ 因子影响）。
-    \item \textbf{距离向插值因子 $\iota_r$}（图\ref{fig:exp_ri}）对计算时间的影响并不是很容易从图中观察得出。虽然距离向插值增加了采样窗口的像素数，但实际上 xcorr 在后续计算过程仅保留了图像中心的插值点，使采样窗口仍保持 $w_x \times w_y$ 大小，因此 $\iota_r$ 影响的仅仅是与插值直接关联的一组复序列 FFT 计算。之所以单独列出，是因为注意到启用距离向插值会显著增加 xcorr 计算时间，虽然计算时间的增加并不随 $\iota_r$ 明显变化。而距离向插值对 xcorr2 计算时间的影响并不十分明显。
+    \item \textbf{距离向插值因子 $\iota_r$}（图\ref{fig:exp_ri}）对计算时间的影响并不是很容易从图中观察得出。虽然距离向插值增加了采样窗口的像素数，但实际上 xcorr 在后续计算过程仅保留了图像中心的插值点，使采样窗口仍保持 $w_x \times w_y$ 大小，因此 $\iota_r$ 影响的仅仅是与插值直接关联的一组复序列 FFT 计算。之所以单独列出，是因为注意到使用距离向插值会显著增加 xcorr 计算时间，虽然计算时间的增加并不随 $\iota_r$ 明显变化。而距离向插值对 xcorr2 计算时间的影响并不十分明显。
 \end{itemize}
 
 将 GMTSAR xcorr 与 xcorr2 配准性能横向比较，xcorr2 的性能提升十分显著，部分结果性能提升甚至达到30倍之多。对于单纯的算法并行改写，这是不可能实现的（最大加速比应为 CPU 核心数）。但由于 xcorr2 并非简单的并行改写而是完整的重写，并包含其他方面的程序优化（如使用实序列 FFT 算法代替复序列 FFT 算法），这样的结果是可以理解的。现代编译器能为良好的代码实现提供合适的优化，从 CPU 指令翻译的层面改善程序性能。
 
-为了说明多线程并行的影响，可以将 xcorr2 串行性能与多线程并行性能做一个比对。串行程序严格保持了单核心 CPU 占用，说明程序本身已经能够充分发挥 CPU 单核心性能。对于前述的三个计算参数，并行程序的加速比和 CPU 核心占用率大体上都随着数据量增加而趋于饱和。
+为了说明多线程并行的影响，可以将 xcorr2 串行性能与多线程并行性能做一个比对。串行程序严格保持了单核心 CPU 占用，说明程序本身已经能够充分发挥 CPU 单核心性能。对于前述的三个计算参数，并行程序的加速比和 CPU 核心占用率大体上都随着参数增加而趋于饱和，说明并行程序在大数据量的场景下性能提升更为明显。
 
 \begin{figure}[htbp]
 \centering
@@ -188,38 +189,40 @@
     \label{fig:exp_xcorr_result}
     \begin{minipage}[t]{0.30\textwidth}
         \centering
-        \includegraphics[width=0.93\textwidth]{xcorr-result}
+        \includegraphics[width=0.8\textwidth]{xcorr-result}
     \end{minipage}
 }
 \subfloat[xcorr2]{
     \label{fig:exp_xcorr2_result}
     \begin{minipage}[t]{0.30\textwidth}
         \centering
-        \includegraphics[width=0.93\textwidth]{xcorr2-result}
+        \includegraphics[width=0.8\textwidth]{xcorr2-result}
     \end{minipage}
 }
 \subfloat[偏移矢量差值]{
     \label{fig:exp_diff_result}
     \begin{minipage}[t]{0.39\textwidth}
         \centering
-        \includegraphics[width=0.93\textwidth]{diff-result}
+        \includegraphics[width=0.8\textwidth]{diff-result}
     \end{minipage}
 }
 \caption{GMTSAR xcorr 与 xcorr2 配准结果对比} \label{fig:exp_result}
-\note{\small 移除了从轨道数据估计的常数偏移，图中仅显示了偏移矢量长度，单位为像素。\\白色部分采样窗口最大互相关小于 GMTSAR aligh.csh 设定的最低值 18，因互相关性太差被筛除。}
+\note{\small 仅包含精配准偏移量。图中仅显示了偏移矢量长度，单位为像素。\\白色部分采样窗口最大互相关小于 GMTSAR aligh.csh 设定的最低值 18，因互相关性太差被筛除。}
 \end{figure}
 
-配准后 SLC 图像的相干性（公式 \label{eq:coherence}）也是衡量配准精度的重要标准。图 \ref{fig:coh-two} 展示了分别经过 xcorr 和 xcorr2 配准处理后的主、副 SLC 图像相干性分布图，图 \ref{fig:coh-diff} 显示了相干性分布的差异。在图像左下角部分，xcorr2 配准后的相干性略优，而左上角部分则反之。总体上看，相干性的差异不超过 $3 \times 10^{-3}$，几乎是可以忽略的。
+配准后 SLC 图像的相干性（公式 \ref{eq:coherence}）是衡量配准精度的重要标准。图 \ref{fig:coh-two} 展示了分别经过 xcorr 和 xcorr2 配准后的主、副 SLC 图像相干性分布图，图 \ref{fig:coh-diff} 显示了相干性分布的差异。图像左下角部分，xcorr2 配准后的相干性略优，而左上角部分则反之。总体上看，相干性差异小于 $3 \times 10^{-3}$，几乎是可以忽略的。
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.99\textwidth]{coh-two}
-\caption{相干性分布图（计算相干性时取像素周围 $8 \times 4$ 像素的邻域）} \label{fig:coh-two}
+\includegraphics[width=0.85\textwidth]{coh-two}
+\caption{配准后 SLC 图像相干性分布图} \label{fig:coh-two}
+\note{\small 计算相干性时取像素周围 $8 \times 4$ 像素的邻域}
 \end{figure}
 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\textwidth]{coh-diff}
-\caption{两幅相干性分布图的差值（用 xcorr2 结果减去 GMTSAR xcorr 的结果）} \label{fig:coh-diff}
+\includegraphics[width=0.60\textwidth]{coh-diff}
+\caption{两幅相干性分布图的差值} \label{fig:coh-diff}
+\note{\small 用 xcorr2 的计算结果减去 GMTSAR xcorr 的结果}
 \end{figure}
