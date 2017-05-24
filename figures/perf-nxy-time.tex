@@ -1,0 +1,61 @@
+\begin{tikzpicture}
+\begin{semilogyaxis}[
+    xlabel={采样窗口数量},
+    ylabel={计算时间/s},
+    xmin=0, xmax=5000,
+    ymin=0.5, ymax=250,
+    ytick={0.5, 1, 2, 5, 10, 20, 50, 100, 200 },
+    legend style={at={(0.97,0.16)},anchor=east,font=\small},
+    ymajorgrids=true,
+    grid style=dashed,
+    log ticks with fixed point,
+]
+
+% -nx NX -ny NY -norange -nointerp
+\addplot[
+    color=blue,
+    mark=triangle*,
+    style=densely dashed,
+    ]
+    coordinates {
+        (4608, 229.347642791)
+        (3200, 157.700291651)
+        (2048, 96.024747129)
+        (1152, 51.340117550)
+        (512, 21.212574205)
+        (128, 5.638659853)
+    };
+    \addlegendentry{GMTSAR xcorr}
+
+\addplot[
+    color=red,
+    mark=diamond*,
+    style=densely dotted,
+    ]
+    coordinates {
+        (4608, 25.681487185)
+        (3200, 19.249105679)
+        (2048, 12.470892872)
+        (1152, 7.826916179)
+        (512, 4.082934246)
+        (128, 1.411728191)
+    };
+    \addlegendentry{xcorr2（单线程）}
+
+\addplot[
+    color=brown,
+    mark=square*,
+    style=solid,
+    ]
+    coordinates {
+        (4608, 7.579960118)
+        (3200, 5.624775143)
+        (2048, 4.246431781)
+        (1152, 3.118109658)
+        (512, 1.859684801)
+        (128, 0.914280470)
+    };
+    \addlegendentry{xcorr2（8线程）}
+
+\end{semilogyaxis}
+\end{tikzpicture}

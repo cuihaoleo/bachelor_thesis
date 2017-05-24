@@ -1,0 +1,29 @@
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={并行线程数},
+    ylabel={计算时间/s},
+    xmin=1, xmax=7,
+    ymin=0, ymax=200,
+    xtick={1, 2, 3, 4, 5, 6, 7},
+%    ytick={ },
+    legend pos=north east,
+    ymajorgrids=true,
+    grid style=dashed,
+]
+
+\addplot[
+    color=red,
+    mark=square,
+    style=solid,
+    ]
+    coordinates {
+        (1, 194.972254756)
+        (2, 106.441216719)
+        (3, 91.799094679)
+        (4, 92.142388643)
+        (5, 92.000214744)
+        (6, 88.829891908)
+        (7, 83.641275544)
+    };
+\end{axis}
+\end{tikzpicture}

@@ -1,0 +1,59 @@
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={采样窗口数量},
+    ylabel={CPU 核心占用},
+    xmin=0, xmax=5000,
+    ymin=0, ymax=6,
+    ytick={ 0, 1, 2, 3, 4, 5, 6 },
+    legend style={at={(0.97,0.7)},anchor=east,font=\small},
+    ymajorgrids=true,
+    grid style=dashed,
+]
+
+\addplot[
+    color=blue,
+    mark=triangle*,
+    style=densely dashed,
+    ]
+    coordinates {
+        (4608, 2.589)
+        (3200, 2.520)
+        (2048, 2.439)
+        (1152, 2.074)
+        (512, 2.108)
+        (128, 2.118)
+    };
+    \addlegendentry{GMTSAR xcorr}
+
+\addplot[
+    color=red,
+    mark=diamond*,
+    style=densely dotted,
+    ]
+    coordinates {
+        (4608, 1.000)
+        (3200, 1.000)
+        (2048, 1.000)
+        (1152, 1.000)
+        (512, 1.000)
+        (128, 0.999)
+    };
+    \addlegendentry{xcorr2（单线程）}
+
+\addplot[
+    color=brown,
+    mark=square*,
+    style=solid,
+    ]
+    coordinates {
+        (4608, 5.899)
+        (3200, 5.674)
+        (2048, 5.283)
+        (1152, 4.705)
+        (512, 3.906)
+        (128, 2.621)
+    };
+    \addlegendentry{xcorr2（8线程）}
+
+\end{axis}
+\end{tikzpicture}
