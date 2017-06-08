@@ -9,7 +9,7 @@
  
 %Information to be included in the title page:
 \title{多线程并行 InSAR 数据处理\\程序的设计与实现}
-\author{崔灏 PB13007103}
+\author{报告人：崔　灏\\ 导　师：查显杰}
 \institute{中国科学技术大学\\地球和空间科学学院}
 \date{\today}
  
@@ -52,20 +52,7 @@
     \begin{columns}
         \begin{column}{0.5\textwidth}
             \centering
-
-            \includegraphics[width=0.6\textwidth]{figures/insar_simple.pdf}
-
-            \resizebox{0.75\textwidth} {!} {
-                \begin{minipage}{\linewidth}
-                \begin{align*}
-                    h &= H - r_1 \cos\theta \\
-                    P_{\textrm{干涉}} &= P_1^* P_2 =  A_1 A_2 \exp(i \frac{4\pi}{\lambda}(r_2 - r_1)) \\
-                    r_2 - r_1 &= r_1 \sqrt{1- \frac{\vec{r_1} \cdot \vec{B}}{r_1} + (\frac{B}{r_1})^2} \qquad \because B \ll |\vec{r}| \\
-                              &\approx - \vec{r_1} \cdot \vec{B}
-                              = - r_1 B \cos(\frac{\pi}{2} - \theta + \alpha)
-                \end{align*}
-                \end{minipage}
-            }
+            \includegraphics[width=0.99\textwidth]{figures/insar_simple.pdf}
         \end{column}
         \begin{column}{0.5\textwidth}
             \footnotesize
@@ -95,18 +82,18 @@
 
     \begin{columns}
         \begin{column}{0.6\textwidth}
-            \begin{scriptsize}
+            \begin{footnotesize}
             InSAR 数据处理数据量大、计算复杂。\\
             \begin{itemize}
                 \item 软件串行处理，CPU 主频有限
                 \item 完整流程等待 20min～hours
-                \item 软件：GMTSAR（开源）、ISCE（需要申请）
+                \item 软件：GMTSAR（开源）、ISCE（需申请）
             \end{itemize}
 
             ~\\
             并行计算可以使总计算效率突破主频限制。\\
-            为了提高 InSAR 数据处理效率，希望将 InSAR 处理程序\textbf{并行化}。
-            \end{scriptsize}
+            为了提高 InSAR 数据处理效率，设计\textbf{并行化}的 InSAR 处理程序。
+            \end{footnotesize}
         \end{column}
         \begin{column}{0.4\textwidth}
             \includegraphics[width=0.99\textwidth]{figures/process.pdf}
@@ -115,27 +102,36 @@
 \end{frame}
 
 
-\subsection{课题成果}
-\begin{frame}
+\begin{frame}{InSAR 数据处理}
     \frametitle{课题介绍}
-    \framesubtitle{课题成果}
+    \framesubtitle{InSAR 数据处理}
 
-    本课题：
-    \begin{itemize}
-        \item 以 GMTSAR 开源代码（串行算法）为范本
-        \item 选取 InSAR 数据处理中两个模块，重写为并行程序：
-        \begin{itemize}
-            \item \textbf{图像配准}（image registration）
-            \item \textbf{图像拼接}（image stitching）
-        \end{itemize}
-        \item 在实际 SAR 数据上测试了新程序，证明并行算法：
-        \begin{itemize}
-            \item 没有降低算法精度
-            \item 大大提高了 InSAR 数据处理效率
-        \end{itemize}
-    \end{itemize}
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{footnotesize}
+                本课题参考 GMTSAR 开源代码（串行算法）：
+                \begin{itemize}
+                    \footnotesize
+                    \item 选取 InSAR 数据处理中计算复杂度较高的两个模块，重写为并行程序：
+                        \begin{itemize}
+                            \footnotesize
+                            \item \textbf{图像配准}（image registration）
+                            \item \textbf{图像拼接}（image stitching）
+                        \end{itemize}
+                    \item 用真实的 SAR 数据测试了新程序，证明该并行算法：
+                        \begin{itemize}
+                            \footnotesize
+                            \item 大大提高 InSAR 数据处理效率
+                            \item 结果可靠，没有降低算法精度
+                        \end{itemize}
+                \end{itemize}
+            \end{footnotesize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \includegraphics[width=0.99\textwidth]{figures/process.pdf}
+        \end{column}
+    \end{columns}
 \end{frame}
-
 
 \section{算法设计}
 \subsection{图像配准算法}
@@ -172,7 +168,7 @@
 
             局部配准：
             \begin{itemize}
-                \item 粗配准（天线参数）+精配准\\
+                \item 全局粗配准+局部精配准\\
                 \item \tiny $ (x'_c, y'_c)_{i,j} = (x_c, y_c)_{i,j} + (\Delta_x, \Delta_y) + (\delta_x, \delta_y)_{i,j} $
             \end{itemize}
         \end{column}
@@ -196,6 +192,7 @@
             \item GMTSAR xcorr：9 次 FFT（或逆变换）
             \item xcorr2：4 次 FFT + 5 次实序列 FFT
         \end{itemize}
+        ~\\
         \includegraphics[width=0.99\textwidth]{figures/xcorr2-crop.pdf}
     \end{block}
 \end{frame}
@@ -443,12 +440,15 @@
 \begin{frame}
     \frametitle{其他贡献}
 
-    提交了三项 GMTSAR 软件问题：
+    向 GMTSAR 开发者反映程序问题：
     \begin{scriptsize} \url{http://gmt.soest.hawaii.edu/projects/gmt5sar/issues} \end{scriptsize}\\
-    一个问题已经被夏威夷大学开发者 Paul Wessel 修复 \\~\\
+    目前一个问题已经被夏威夷大学开发者 Paul Wessel 修复
 
-    \centering
-    \includegraphics[width=0.85\textwidth,trim={0 5cm 0 0},clip]{figures/issue.png}
+    \begin{center}
+        \includegraphics[width=0.80\textwidth,trim={0cm 5cm 0 2cm},clip]{figures/issue.png}
+    \end{center}
+    本课题全部代码发布在\\
+    \begin{scriptsize} \url{https://github.com/cuihaoleo/gmtsar_optimize} \end{scriptsize}\\
 \end{frame}
 
 
@@ -456,8 +456,8 @@
     \frametitle{结语}
 
     \begin{itemize}
-        \item 本课题全部代码发布在\\ \url{https://github.com/cuihaoleo/gmtsar_optimize}
-        \item 欢迎批评指正！
+        \item 感谢查显杰老师的指导和同学们的帮助
+        \item 感谢各位聆听 \& 欢迎批评指正
     \end{itemize}
 \end{frame}
 
