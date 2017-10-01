@@ -181,7 +181,9 @@
 \caption{距离向插值因子对配准速度的影响} \label{fig:exp_ri}
 \end{figure}
 
-图像配准算法涉及大量浮点运算，计算顺序上的不同会导致精配准结果在一定范围内波动。图 \ref{fig:exp_result} 将 GMTSAR xcorr 和 xcorr2 计算出的精配准偏移量 $|(\delta_x, \delta_y)|$ 进行了对比，除采样窗口数取 $n_x\times n_y = 32 \times 64$ 之外其他参数均为默认值。除去互相关低于阈值的采样位置后，余下 1089 个有效结果的 $|(\delta_x, \delta_y)|$ 基本都在10个像素以内，这是符合经验的。图 \ref{fig:exp_diff_result} 显示了两个程序得到的偏移矢量的差异，全部有效结果中 1076 个（占98.8\%）采样位置的精配准偏移量差异不超过1个像素。因此可以认为，xcorr2 和 xcorr 的精配准结果几乎完全一致。
+图像配准算法涉及大量浮点运算，计算顺序上的不同会导致精配准结果在一定范围内波动。为了说明并行算法结果的正确性，下面对 xcorr2 和 GMTSAR xcorr 的配准结果做了比较。
+
+图 \ref{fig:exp_result} 将 GMTSAR xcorr 和 xcorr2 计算出的精配准偏移量 $|(\delta_x, \delta_y)|$ 进行了对比，除采样窗口数取 $n_x\times n_y = 32 \times 64$ 之外其他参数均为默认值。除去互相关低于阈值的采样位置后，余下 1089 个有效结果的 $|(\delta_x, \delta_y)|$ 基本都在10个像素以内，这是符合经验的。图 \ref{fig:exp_diff_result} 显示了两个程序得到的偏移矢量的差异，全部有效结果中 1076 个（占98.8\%）采样位置的精配准偏移量差异不超过1个像素。因此可以认为，xcorr2 和 xcorr 的精配准结果几乎完全一致。
 
 \begin{figure}[htbp]
 \centering
@@ -189,32 +191,32 @@
     \label{fig:exp_xcorr_result}
     \begin{minipage}[t]{0.30\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{xcorr-result}
+        \includegraphics[width=0.99\textwidth]{xcorr-result}
     \end{minipage}
 }
 \subfloat[xcorr2]{
     \label{fig:exp_xcorr2_result}
     \begin{minipage}[t]{0.30\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{xcorr2-result}
+        \includegraphics[width=0.99\textwidth]{xcorr2-result}
     \end{minipage}
 }
 \subfloat[偏移矢量差值]{
     \label{fig:exp_diff_result}
     \begin{minipage}[t]{0.39\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{diff-result}
+        \includegraphics[width=0.99\textwidth]{diff-result}
     \end{minipage}
 }
 \caption{GMTSAR xcorr 与 xcorr2 配准结果对比} \label{fig:exp_result}
 \note{\small 仅包含精配准偏移量。图中仅显示了偏移矢量长度，单位为像素。\\白色部分采样窗口最大互相关小于 GMTSAR aligh.csh 设定的最低值 18，因互相关性太差被筛除。}
 \end{figure}
 
-配准后 SLC 图像的相干性（公式 \ref{eq:coherence}）是衡量配准精度的重要标准。图 \ref{fig:coh-two} 展示了分别经过 xcorr 和 xcorr2 配准后的主、副 SLC 图像相干性分布图，图 \ref{fig:coh-diff} 显示了相干性分布的差异。图像左下角部分，xcorr2 配准后的相干性略优，而左上角部分则反之。总体上看，相干性差异小于 $3 \times 10^{-3}$，几乎是可以忽略的。
+配准后 SLC 图像的相干性（公式 \ref{eq:coherence}）是衡量配准精度的重要标准。图 \ref{fig:coh-two} 展示了分别经过 xcorr 和 xcorr2 配准后的主、副 SLC 图像相干性分布图，图 \ref{fig:coh-diff} 显示了相干性分布的差异。图像左下角部分，xcorr2 配准后的相干性略优，而左上角部分则反之。从整幅图像总体上看，相干性差异最大不超过 $3 \times 10^{-3}$，几乎是可以忽略的。
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{coh-two}
+\includegraphics[width=0.99\textwidth]{coh-two}
 \caption{配准后 SLC 图像相干性分布图} \label{fig:coh-two}
 \note{\small 计算相干性时取像素周围 $8 \times 4$ 像素的邻域}
 \end{figure}
@@ -222,7 +224,7 @@
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.60\textwidth]{coh-diff}
+\includegraphics[width=0.99\textwidth]{coh-diff}
 \caption{两幅相干性分布图的差值} \label{fig:coh-diff}
 \note{\small 用 xcorr2 的计算结果减去 GMTSAR xcorr 的结果}
 \end{figure}
