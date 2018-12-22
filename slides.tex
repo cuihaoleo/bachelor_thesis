@@ -1,0 +1,464 @@
+\documentclass{beamer}
+\usetheme{boxes}
+\usepackage{xeCJK}
+\usepackage{pgfplots} 
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\renewcommand{\today}{\number\year 年 \number\month 月 \number\day 日}
+ 
+ 
+%Information to be included in the title page:
+\title{多线程并行 InSAR 数据处理\\程序的设计与实现}
+\author{报告人：崔　灏\\ 导　师：查显杰}
+\institute{中国科学技术大学\\地球和空间科学学院}
+\date{\today}
+ 
+ 
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+    \frametitle{摘要}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \tableofcontents
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            为什么选这个课题？
+            \begin{itemize}
+                \item 大创课题中遇到的实际困难。
+                \item 在信院实验室做图像处理工作。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{课题介绍}
+\subsection{InSAR 数据处理}
+
+\begin{frame}
+    \frametitle{课题介绍}
+    \framesubtitle{InSAR 测高原理}
+
+    \textbf{合成孔径雷达干涉成像（InSAR）}技术：
+    \begin{itemize}
+        \small
+        \setlength\itemsep{-0.1em}
+        \item 两幅 SAR 图像干涉：相位差 $\to$ 高程/形变（厘米级）
+        \item 大地测量的重要手段
+    \end{itemize}
+ 
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.99\textwidth]{figures/insar_simple.pdf}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \footnotesize
+            \resizebox{0.99\textwidth} {!} {
+                \begin{minipage}{\linewidth}
+                \begin{align*}
+                    h &= H - r_1 \cos\theta \\
+                    P_{\textrm{干涉}} &= P_1^* P_2 =  A_1 A_2 \exp(i \frac{4\pi}{\lambda}(r_2 - r_1)) \\
+                    r_2 - r_1 &= r_1 \sqrt{1- \frac{\vec{r_1} \cdot \vec{B}}{r_1} + (\frac{B}{r_1})^2} \\
+                              &\approx - \vec{r_1} \cdot \vec{B} \qquad \because B \ll |\vec{r}| \\
+                              &= - r_1 B \cos(\frac{\pi}{2} - \theta + \alpha)
+                \end{align*}
+                \end{minipage}
+            }
+
+            ~\\~\\
+            干涉图相位 = \\
+            地球曲率 + 地形 + 地表形变 + ……
+            %\includegraphics[width=0.8\textwidth]{figures/process.pdf}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{InSAR 数据处理}
+    \frametitle{课题介绍}
+    \framesubtitle{InSAR 数据处理}
+
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{footnotesize}
+            InSAR 数据处理数据量大、计算复杂。\\
+            \begin{itemize}
+                \item 软件串行处理，CPU 主频有限
+                \item 完整流程等待 20min～hours
+                \item 软件：GMTSAR（开源）、ISCE（需申请）
+            \end{itemize}
+
+            ~\\
+            并行计算可以使总计算效率突破主频限制。\\
+            为了提高 InSAR 数据处理效率，设计\textbf{并行化}的 InSAR 处理程序。
+            \end{footnotesize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \includegraphics[width=0.99\textwidth]{figures/process.pdf}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{InSAR 数据处理}
+    \frametitle{课题介绍}
+    \framesubtitle{InSAR 数据处理}
+
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{footnotesize}
+                本课题参考 GMTSAR 开源代码（串行算法）：
+                \begin{itemize}
+                    \footnotesize
+                    \item 选取 InSAR 数据处理中计算复杂度较高的两个模块，重写为并行程序：
+                        \begin{itemize}
+                            \footnotesize
+                            \item \textbf{图像配准}（image registration）
+                            \item \textbf{图像拼接}（image stitching）
+                        \end{itemize}
+                    \item 用真实的 SAR 数据测试了新程序，证明该并行算法：
+                        \begin{itemize}
+                            \footnotesize
+                            \item 大大提高 InSAR 数据处理效率
+                            \item 结果可靠，没有降低算法精度
+                        \end{itemize}
+                \end{itemize}
+            \end{footnotesize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \includegraphics[width=0.99\textwidth]{figures/process.pdf}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{算法设计}
+\subsection{图像配准算法}
+
+\begin{frame}
+    \frametitle{算法设计}
+    \framesubtitle{图像配准（GMTSAR xcorr）}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \footnotesize
+            \begin{center}
+                图像配准 $(x_i, y_i) \to (x'_i, y'_i)$：
+                \begin{equation*}
+                    \begin{bmatrix}
+                        t_i x_i' \\
+                        t_i y_i' \\
+                        t_i \\
+                    \end{bmatrix}
+                    = \begin{bmatrix}
+                        a & b & c \\
+                        d & e & f \\
+                        0 & 0 & 1 \\
+                    \end{bmatrix}
+                    \begin{bmatrix}
+                        x \\
+                        y \\
+                        1 \\
+                    \end{bmatrix}
+                \end{equation*}
+                采样 $\to$ 局部配准 $\to$ 拟合全局参数\\
+                要求精度：1/10 像素
+            \end{center}
+
+            局部配准：
+            \begin{itemize}
+                \item 全局粗配准+局部精配准\\
+                \item \tiny $ (x'_c, y'_c)_{i,j} = (x_c, y_c)_{i,j} + (\Delta_x, \Delta_y) + (\delta_x, \delta_y)_{i,j} $
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \includegraphics[width=0.80\textwidth]{figures/register.pdf}
+        \end{column}
+    \end{columns}
+
+    \centering
+    \includegraphics[width=0.99\textwidth]{figures/xcorr-crop.pdf}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{算法设计}
+    \framesubtitle{图像配准优化（xcorr2）}
+
+    \begin{block}{简化 FFT}
+        局部配准只用到复像素的幅值（散射系数幅度）：
+        \begin{itemize}
+            \item GMTSAR xcorr：9 次 FFT（或逆变换）
+            \item xcorr2：4 次 FFT + 5 次实序列 FFT
+        \end{itemize}
+        ~\\
+        \includegraphics[width=0.99\textwidth]{figures/xcorr2-crop.pdf}
+    \end{block}
+\end{frame}
+
+
+
+\begin{frame}
+    \frametitle{算法设计}
+    \framesubtitle{图像配准优化（xcorr2）}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \begin{block}{主-副多线程架构}
+            \begin{itemize}
+                \item 主线程加载采样窗口图像
+                \begin{itemize}
+                    \item 预读取
+                    \item 启动计算线程
+                \end{itemize}
+                \item 计算线程执行局部配准
+            \end{itemize}
+            \end{block}
+
+            \begin{block}{特点}
+            \begin{itemize}
+                \item 任务分割粒度小 \\ \begin{scriptsize} 512 采样窗口 vs 4～16 核心 \end{scriptsize}
+                \item 数据量大，避免竞争 IO \\ \begin{scriptsize} 磁盘顺序读写优势 \end{scriptsize}
+            \end{itemize}
+            \end{block}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.99\textwidth]{figures/parallel-ppt.pdf}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\subsection{图像拼接算法}
+
+\begin{frame}
+    \frametitle{算法设计}
+    \framesubtitle{图像拼接}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \begin{block}{应用}
+                \begin{small}
+                得到大范围的 InSAR 图像
+                \begin{itemize}
+                    \item 预处理：拼接 SAR 数据
+                    \item InSAR 成像后：拼接干涉图
+                \end{itemize}
+                卫星测绘中大量使用。
+                \end{small}
+            \end{block}
+            \begin{block}{特点/困难}
+                \begin{small}
+                \begin{itemize}
+                    \item 多个输入 $\to$ 单一输出
+                    \item 必须保持拼接顺序
+                \end{itemize}
+                \end{small}
+            \end{block}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.99\textwidth]{figures/wenchuan.png}
+            \begin{tiny}
+            *反映汶川地震前后地表形变的 InSAR 图像 \\
+            （地空学院金泽宇同学提供）
+            \end{tiny}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{算法设计}
+    \framesubtitle{图像拼接优化}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \begin{block}{归约技术（reduce）}
+                \small
+                可结合/不可交换运算的并行化
+                \begin{itemize}
+                    \item 分组拼接相邻文件
+                    \item 多轮迭代至完成
+                \end{itemize}
+                计算任务不平衡（收敛到单线程）
+            \end{block}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.99\textwidth]{figures/reduce-ppt.pdf}
+            \begin{tiny}
+            8个文件的并行归约拼接示意图
+            \end{tiny}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\section{实验评估}
+\subsection{性能和计算精度评估}
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{环境}
+
+    \begin{block}{实验环境}
+        \small
+        \begin{itemize}
+            \setlength\itemsep{-0.1em}
+            \item Intel Xeon E5-2650 v4 @2.20GHz (12核)
+            \item Ubuntu 16.04.2
+            \item gcc 5.4.0 (-O2 优化)
+        \end{itemize}
+    \end{block}
+ 
+    \begin{block}{实验数据}
+        \small
+        \begin{itemize}
+            \setlength\itemsep{-0.1em}
+            \item 2010 Baja Earthquake ($7.2 M_w$)
+            \item ALOS 卫星数据（下载自 GMTSAR 网站）
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{图像拼接}
+
+    6 帧 SAR 图像拼接效率 \\~\\
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \resizebox {\textwidth} {!} {
+                \input{figures/perf-merge-time.tex}
+            }
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \resizebox {\textwidth} {!} {
+                \input{figures/perf-merge-cpuusage.tex}
+            }
+        \end{column}
+    \end{columns}
+
+    \begin{itemize}
+        \small
+        \setlength\itemsep{-0.1em}
+        \item 数据太少，收敛太快
+        \item 仍然节省了一半的时间
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{图像配准}
+
+    SLC 图像配准效率 \\~\\
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \resizebox {\textwidth} {!} {
+                \input{figures/perf-nxy-time.tex}
+            }
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \resizebox {\textwidth} {!} {
+                \input{figures/perf-nxy-cpuusage.tex}
+            }
+        \end{column}
+    \end{columns}
+
+    \begin{itemize}
+        \small
+        \setlength\itemsep{-0.1em}
+        \item 单线程就有了很大提升：FFT 优化、编译器优化？
+        \item 并行算法加速 6～30 倍！
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{图像配准}
+
+    精配准偏移比较（仅显示矢量长度） \\~\\
+    \begin{columns}
+        \begin{column}{0.3\textwidth}
+            \centering
+            \includegraphics[width=0.8\textwidth]{figures/xcorr-result}\\
+            \begin{scriptsize} GMTSAR xcorr \end{scriptsize}
+        \end{column}
+        \begin{column}{0.3\textwidth}
+            \centering
+            \includegraphics[width=0.8\textwidth]{figures/xcorr2-result}\\
+            \begin{scriptsize} xcorr2 \end{scriptsize}
+        \end{column}
+        \begin{column}{0.39\textwidth}
+            \centering
+            \includegraphics[width=0.8\textwidth]{figures/diff-result}\\
+            \begin{scriptsize} 矢量差 \end{scriptsize}
+        \end{column}
+    \end{columns}
+
+    ~\\
+    98.8\% 有效配准结果差异不超过1个像素
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{图像配准}
+
+    相干性：
+    \resizebox{0.7\textwidth} {!} {
+        \begin{minipage}{\linewidth}
+            \begin{equation*}
+                \gamma(x, y) = \frac{\sum_{x', y'} P_1(x', y') P_2^*(x', y')}{\sqrt{\sum_{x', y'}|P_1(x', y')|^2 \sum_{x', y'}|P_2(x', y')|^2}} \qquad (x', y') \in D(x, y)
+            \end{equation*}
+        \end{minipage}
+    }
+    \\~\\
+    \includegraphics[width=0.99\textwidth]{figures/coh-two-color}
+\end{frame}
+
+\begin{frame}
+    \frametitle{实验评估}
+    \framesubtitle{图像配准}
+
+    相干性差异 < 0.003 \\
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/coh-diff}
+    ~\\
+    \begin{scriptsize} 用上页 xcorr2 的结果减去 GMTSAR xcorr 的结果 \end{scriptsize}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{其他贡献}
+
+    向 GMTSAR 开发者反映程序问题：
+    \begin{scriptsize} \url{http://gmt.soest.hawaii.edu/projects/gmt5sar/issues} \end{scriptsize}\\
+    目前一个问题已经被夏威夷大学开发者 Paul Wessel 修复
+
+    \begin{center}
+        \includegraphics[width=0.80\textwidth,trim={0cm 5cm 0 2cm},clip]{figures/issue.png}
+    \end{center}
+    本课题全部代码发布在\\
+    \begin{scriptsize} \url{https://github.com/cuihaoleo/gmtsar_optimize} \end{scriptsize}\\
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{结语}
+
+    \begin{itemize}
+        \item 感谢查显杰老师的指导和同学们的帮助
+        \item 感谢各位聆听 \& 欢迎批评指正
+    \end{itemize}
+\end{frame}
+
+\end{document}
